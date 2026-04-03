@@ -1,14 +1,43 @@
 # po-skills
 
-Distilled **Cursor Agent Skills** for Product Owner workflows (Toyota / Lexus SIT, SST, and related). Each skill is a folder with `SKILL.md` (YAML frontmatter + body). Names use a **`po-` prefix** (e.g. `po-ticketing`, `po-coverage`).
+Distilled **Agent Skills** for Product Owner workflows (Toyota / Lexus SIT, SST, and related). Each skill is a folder with `SKILL.md` (YAML frontmatter + body). Names use a **`po-` prefix** (e.g. `po-ticketing`, `po-coverage`).
+
+The same `SKILL.md` layout works in **Cursor**, **Claude Code**, and **Windsurf** when installed at each tool’s skills path (see below). **GitHub Copilot** in VS Code uses a single instruction file instead—see [integrations/github-copilot.md](integrations/github-copilot.md).
 
 **Source:** Derived from the `skills/` guides in the **po-templates** repository (copy + distill; no live submodule to po-templates).
 
 ## Use in another project
 
-Cursor loads **project** skills from `.cursor/skills/<skill-name>/SKILL.md`.
+### Recommended: one submodule, multiple symlinks
 
-### Option A: Submodule as `.cursor/skills` (only this repo’s skills)
+Add **po-skills** once (e.g. as a submodule at `vendor/po-skills`), then point every tool’s skills directory at that tree so content stays identical and updates stay in one place.
+
+| Tool | Path | Notes |
+|------|------|--------|
+| **Cursor** | `.cursor/skills` | Project skills |
+| **Claude Code** | `.claude/skills` | Same `SKILL.md` layout |
+| **Windsurf** | `.windsurf/skills` | Cascade workspace skills |
+| **(optional)** | `.agents/skills` | Also scanned by Windsurf for cross-agent compatibility |
+
+**Helper script** (run from the **consuming** repo root after the submodule exists):
+
+```bash
+bash vendor/po-skills/scripts/link-po-skills.sh
+# Optional: also link .agents/skills
+INCLUDE_AGENTS=1 bash vendor/po-skills/scripts/link-po-skills.sh
+```
+
+Defaults: repo root = current directory, po-skills at `vendor/po-skills`. Override with:
+
+```bash
+bash vendor/po-skills/scripts/link-po-skills.sh /path/to/your-project vendor/po-skills
+```
+
+Symlinks use **absolute** paths so they resolve regardless of current working directory.
+
+**Windows:** If symlinks are blocked, use an elevated shell, enable Developer Mode, or create **directory junctions** (`mklink /J`) instead—or copy `vendor/po-skills` into each tool path (higher maintenance).
+
+### Cursor only: submodule at `.cursor/skills`
 
 Replace `<URL>` with your remote for this repository.
 
@@ -18,18 +47,26 @@ git submodule add <URL> .cursor/skills
 git submodule update --init --recursive
 ```
 
-After checkout, paths look like `.cursor/skills/po-ticketing/SKILL.md`.
+Paths look like `.cursor/skills/po-ticketing/SKILL.md`.
 
-### Option B: Submodule next to existing skills
+### Cursor: submodule alongside existing skills
 
 If you already have `.cursor/skills` entries you want to keep:
 
 ```bash
 git submodule add <URL> .cursor/skills-po
-# Copy or symlink only the po-* folders into .cursor/skills/
+# Symlink or copy only the po-* folders into .cursor/skills/
 ```
 
 Because every skill here is **`po-*`**, name collisions with non-prefixed skills are unlikely.
+
+### VS Code and GitHub Copilot
+
+Copilot does **not** load per-folder `SKILL.md` trees. Use a **single** `.github/copilot-instructions.md` (or your team’s chosen instruction file) and merge in the snippet from **[integrations/github-copilot.md](integrations/github-copilot.md)** so Copilot knows to read `vendor/po-skills/.../SKILL.md` when relevant.
+
+### Kiro
+
+Kiro uses **`.kiro/agents/`** with its own agent format (tools, model, prompts)—not a drop-in for `SKILL.md` folders. Treat **po-skills** as the source of truth: reference paths like `vendor/po-skills/po-ticketing/SKILL.md` inside agent prompts, or maintain thin hand-written agents that point to those files.
 
 ### CI and fresh clones
 
@@ -42,7 +79,7 @@ Ensure CI checks out submodules, for example:
     submodules: true
 ```
 
-Or run `git submodule update --init --recursive` after clone.
+Or run `git submodule update --init --recursive` after clone. If you use symlinks, ensure the job that needs skills runs on a checkout that includes them.
 
 ### Versioning
 
@@ -50,14 +87,18 @@ Submodules pin a **commit**. To record upgrades, tag this repo (`v1.0.0`) and bu
 
 ## Contributing (in this repo)
 
-Cursor discovers project skills under **`<workspace>/.cursor/skills`**. This repository’s **root** is the skill folders themselves (no `.cursor` wrapper). To have Cursor load these skills while editing **po-skills** locally, from the repo root:
+This repository’s **root** is the skill folders (no `.cursor/` wrapper). To load skills locally:
+
+**Cursor / Claude Code / Windsurf (optional):** from the repo root:
 
 ```bash
-mkdir -p .cursor
-ln -sf .. .cursor/skills
+mkdir -p .cursor .claude .windsurf
+ln -sfn "$(pwd)" .cursor/skills
+ln -sfn "$(pwd)" .claude/skills
+ln -sfn "$(pwd)" .windsurf/skills
 ```
 
-(Or clone this repo directly into `.cursor/skills` of a scratch project.)
+Or run `bash scripts/link-po-skills.sh . .` (po-skills path = current directory).
 
 ## Skills
 
@@ -76,6 +117,11 @@ ln -sf .. .cursor/skills
 | `po-spec-drafts` | Working drafts and specs |
 | `po-jira-confluence-mcp` | Jira / Confluence / MCP |
 | `po-session-hygiene` | `tasks/todo.md`, `tasks/lessons.md` |
+
+## Tool notes
+
+- Vendor docs change over time; confirm paths for your **Cursor / Claude Code / Windsurf** versions if something does not load.
+- Some tools impose a **maximum length** on YAML `description`. If a skill misbehaves in one tool, shorten the `description` in that skill’s `SKILL.md` and test again.
 
 ## Maintenance
 
