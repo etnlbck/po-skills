@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Link po-skills into Cursor, Claude Code, Windsurf, and optional .agents/skills paths.
+# Link po-skills into Cursor, Claude Code, Windsurf, Kiro, and optional .agents/skills paths.
 # Run from the consuming repository root after adding po-skills (e.g. git submodule at vendor/po-skills).
 #
 # Usage:
@@ -43,6 +43,7 @@ link_one() {
 link_one "$REPO_ROOT/.cursor" "skills"
 link_one "$REPO_ROOT/.claude" "skills"
 link_one "$REPO_ROOT/.windsurf" "skills"
+link_one "$REPO_ROOT/.kiro" "skills"
 
 if [[ "${INCLUDE_AGENTS:-}" == "1" ]]; then
   link_one "$REPO_ROOT/.agents" "skills"
